@@ -1,16 +1,17 @@
 from datetime import datetime
 from enum import Enum
+from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ErrorCode(str, Enum):
-    TEAM_EXISTS = 'TEAM_EXISTS'
-    PR_EXISTS = 'PR_EXISTS'
-    PR_MERGED = 'PR_MERGED'
-    NOT_ASSIGNED = 'NOT_ASSIGNED'
-    NO_CANDIDATE = 'NO_CANDIDATE'
-    NOT_FOUND = 'NOT_FOUND'
+    TEAM_EXISTS = "TEAM_EXISTS"
+    PR_EXISTS = "PR_EXISTS"
+    PR_MERGED = "PR_MERGED"
+    NOT_ASSIGNED = "NOT_ASSIGNED"
+    NO_CANDIDATE = "NO_CANDIDATE"
+    NOT_FOUND = "NOT_FOUND"
 
 
 class Error(BaseModel):
@@ -42,8 +43,8 @@ class Team(BaseModel):
 
 
 class PullRequestStatus(str, Enum):
-    OPEN = 'OPEN'
-    MERGED = 'MERGED'
+    OPEN = "OPEN"
+    MERGED = "MERGED"
 
 
 class PullRequestBase(BaseModel):
@@ -59,5 +60,9 @@ class PullRequestShort(PullRequestBase):
 
 class PullRequest(PullRequestBase):
     assigned_reviewers: list[str]
-    created_at: datetime | None
-    merged_at: datetime | None
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(
+            ZoneInfo("Europe/Moscow"),
+        )
+    )
+    merged_at: datetime | None = None
