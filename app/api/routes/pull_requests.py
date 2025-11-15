@@ -1,4 +1,6 @@
+from datetime import datetime
 from typing import Annotated
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Body
 
@@ -28,7 +30,7 @@ async def create_pull_request(
     for member in team.members:
         if member.is_active and member.user_id != author.user_id:
             assigned_reviewers.append(member.user_id)
-        elif len(assigned_reviewers) == 2:
+        if len(assigned_reviewers) == 2:
             break
 
     pr = PullRequest(
@@ -50,6 +52,8 @@ async def assign_merged(
     pull_request_id: Annotated[str, Body()],
 ):
     pr = db.get_pull_request_or_raise_not_found(pull_request_id)
+    if pr.status == PullRequestStatus.OPEN:
+        pr.merged_at = datetime.now(ZoneInfo("Europe/Moscow"))
     pr.status = PullRequestStatus.MERGED
     return {"pr": pr}
 
