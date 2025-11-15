@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 
+from app.exceptions import NotFoundException
 from app.models import PullRequest, Team, TeamMember, User
 
 
@@ -8,6 +9,24 @@ class DataBase:
     users: dict[str, User] = field(default_factory=dict)
     pull_requests: dict[str, PullRequest] = field(default_factory=dict)
     teams: dict[str, Team] = field(default_factory=dict)
+
+    def get_user_or_raise_not_found(self, user_id) -> User:
+        user = self.users.get(user_id)
+        if not user:
+            raise NotFoundException("user not found")
+        return user
+
+    def get_pull_request_or_raise_not_found(self, pull_request_id) -> PullRequest:
+        pr = db.pull_requests.get(pull_request_id)
+        if not pr:
+            raise NotFoundException("PR not found")
+        return pr
+
+    def get_team_or_raise_not_found(self, team_name) -> Team:
+        team = db.teams.get(team_name)
+        if not team:
+            raise NotFoundException("team not found")
+        return team
 
 
 db = DataBase()

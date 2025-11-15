@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body
 
 from app.core.db import db
-from app.models import Error, ErrorCode, ErrorResponse, PullRequest, PullRequestStatus
+from app.exceptions import ConflictException, NotFoundException
+from app.models import ErrorCode, PullRequest, PullRequestStatus
 
 router = APIRouter(prefix="/pullRequest", tags=["PullRequests"])
 
@@ -17,30 +18,11 @@ async def create_pull_request(
     pull_request_name: Annotated[str, Body()],
     author_id: Annotated[str, Body()],
 ):
-    author = db.users.get(author_id)
-    if not author:
-        raise HTTPException(
-            status_code=404,
-            detail=ErrorResponse(
-                error=Error(code=ErrorCode.NOT_FOUND, message="Автор не найден")
-            ).model_dump(),
-        )
-    elif pull_request_id in db.pull_requests:
-        raise HTTPException(
-            status_code=409,
-            detail=ErrorResponse(
-                error=Error(code=ErrorCode.PR_EXISTS, message="PR уже существует")
-            ).model_dump(),
-        )
+    author = db.get_user_or_raise_not_found(author_id)
+    team = db.get_team_or_raise_not_found(author.team_name)
 
-    team = db.teams.get(author.team_name)
-    if not team:
-        raise HTTPException(
-            status_code=404,
-            detail=ErrorResponse(
-                error=Error(code=ErrorCode.NOT_FOUND, message="Команда не найдена")
-            ).model_dump(),
-        )
+    if pull_request_id in db.pull_requests:
+        raise ConflictException(code=ErrorCode.PR_EXISTS, message="PR already exists")
 
     assigned_reviewers = []
     for member in team.members:
@@ -48,6 +30,7 @@ async def create_pull_request(
             assigned_reviewers.append(member.user_id)
         elif len(assigned_reviewers) == 2:
             break
+
     pr = PullRequest(
         pull_request_id=pull_request_id,
         pull_request_name=pull_request_name,
@@ -66,14 +49,7 @@ async def create_pull_request(
 async def assign_merged(
     pull_request_id: Annotated[str, Body()],
 ):
-    pr = db.pull_requests.get(pull_request_id)
-    if not pr:
-        raise HTTPException(
-            status_code=404,
-            detail=ErrorResponse(
-                error=Error(code=ErrorCode.NOT_FOUND, message="PR не найден")
-            ).model_dump(),
-        )
+    pr = db.get_pull_request_or_raise_not_found(pull_request_id)
     pr.status = PullRequestStatus.MERGED
     return {"pr": pr}
 
@@ -83,11 +59,38 @@ async def reassign_reviewer(
     pull_request_id: Annotated[str, Body()],
     old_user_id: Annotated[str, Body()],
 ):
-    pr = db.pull_requests.get(pull_request_id)
-    if not pr:
-        raise HTTPException(
-            status_code=404,
-            detail=ErrorResponse(
-                error=Error(code=ErrorCode.NOT_FOUND, message="PR не найден")
-            ).model_dump(),
+    pr = db.get_pull_request_or_raise_not_found(pull_request_id)
+    user = db.get_user_or_raise_not_found(old_user_id)
+    team = None
+
+    if pr.status == PullRequestStatus.MERGED:
+        raise ConflictException(
+            code=ErrorCode.PR_MERGED, message="cannot reassign on merged PR"
         )
+    elif old_user_id not in pr.assigned_reviewers:
+        raise ConflictException(
+            code=ErrorCode.NOT_ASSIGNED, message="reviewer is not assigned to this PR"
+        )
+
+    try:
+        team = db.get_team_or_raise_not_found(user.team_name)
+    except NotFoundException:
+        raise ConflictException(
+            code=ErrorCode.NO_CANDIDATE,
+            message="no active replacement candidate in team",
+        )
+
+    replaced_by: str | None = None
+    for member in team.members:
+        if member.user_id not in pr.assigned_reviewers and member.is_active:
+            replaced_by = member.user_id
+            pr.assigned_reviewers[pr.assigned_reviewers.index(old_user_id)] = (
+                replaced_by
+            )
+            break
+    if not replaced_by:
+        raise ConflictException(
+            code=ErrorCode.NO_CANDIDATE,
+            message="no active replacement candidate in team",
+        )
+    return {"pr": pr, "replaced_by": replaced_by}

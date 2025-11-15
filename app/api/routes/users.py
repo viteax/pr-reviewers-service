@@ -1,9 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body
 
 from app.core.db import db
-from app.models import Error, ErrorCode, ErrorResponse, PullRequestShort, User
+from app.models import PullRequestShort, User
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -17,14 +17,7 @@ async def set_is_active(
     user_id: Annotated[str, Body()],
     is_active: Annotated[str, Body()],
 ):
-    user = db.users.get(user_id)
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail=ErrorResponse(
-                error=Error(code=ErrorCode.NOT_FOUND, message="Пользователь не найден")
-            ).model_dump(),
-        )
+    user = db.get_user_or_raise_not_found(user_id)
     user.is_active = is_active
     return user
 
