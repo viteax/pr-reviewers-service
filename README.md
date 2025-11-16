@@ -11,12 +11,39 @@ Puller - сервис, автоматически назначающий рев�
 
 ## Как поднять?
 
-- Скрипт одной копипастой
+- Linux, скрипт одной копипастой (нужна утилита make) 
 
 ```bash
 git clone https://github.com/viteax/pr-reviewers-service.git
 cd pr-reviewers-service
 make
+
+```
+
+- Linux, без make
+
+```bash
+git clone https://github.com/viteax/pr-reviewers-service.git
+cd pr-reviewers-service
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+fastapi dev app/main.py --port 8080
+
+```
+
+- Windows
+
+```powershell
+git clone https://github.com/viteax/pr-reviewers-service.git
+cd pr-reviewers-service
+py -m venv .venv
+.\.venv\Scripts\activate
+python.exe -m pip install --upgrade pip
+pip install -r .\requirements.txt
+fastapi dev .\app\main.py --port 8080
+
 ```
 
 Объяснение команд:
