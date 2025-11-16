@@ -54,6 +54,7 @@ def fake_db():
         )
         if pr.status == PullRequestStatus.MERGED:
             pr.merged_at = datetime.now(ZoneInfo("Europe/Moscow"))
+
         author = db.get_user_or_raise_not_found(pr.author_id)
         team = db.get_team_or_raise_not_found(author.team_name)
         for member in random.sample(team.members, len(team.members)):
