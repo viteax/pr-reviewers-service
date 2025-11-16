@@ -28,4 +28,4 @@ install: $(VENV)
 	$(PIP) install -r requirements.txt
 
 run:
-	$(FASTAPI) dev app/main.py
+	$(FASTAPI) dev app/main.py --port 8080
