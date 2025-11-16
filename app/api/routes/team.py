@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 
 from app.core.db import db
 from app.exceptions import ConflictException
@@ -7,7 +7,16 @@ from app.models import ErrorCode, Team, User
 router = APIRouter(prefix="/team", tags=["Teams"])
 
 
-@router.post("/add", status_code=201, response_model=Team)
+@router.post(
+    "/add",
+    status_code=201,
+    response_model=Team,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "team already exists",
+        }
+    },
+)
 async def add_team(team: Team):
     if db.teams.get(team.team_name):
         raise ConflictException(
@@ -25,6 +34,11 @@ async def add_team(team: Team):
 @router.get(
     "/get",
     response_model=Team,
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": "team not found",
+        }
+    },
 )
 async def get_team(team_name: str):
     return db.get_team_or_raise_not_found(team_name)

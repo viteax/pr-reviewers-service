@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, status
 
 from app.core.db import db
 from app.models import PullRequestShort, User
@@ -11,7 +11,11 @@ router = APIRouter(prefix="/users", tags=["Users"])
 @router.post(
     "/setIsActive",
     response_model=User,
-    responses={404: {"description": "Пользователь не найден", "content": ""}},
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": "user not found",
+        }
+    },
 )
 async def set_is_active(
     user_id: Annotated[str, Body()],
