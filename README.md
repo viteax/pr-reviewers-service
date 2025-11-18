@@ -20,6 +20,14 @@ docker-compose up
 
 ```
 
+Может возникнуть ошибка 'Permission denied', она исправляется запуском
+docker-compose от суперюзера
+
+```bash
+sudo docker-compose up
+
+```
+
 - Linux, скрипт одной копипастой (нужна утилита make) 
 
 ```bash
