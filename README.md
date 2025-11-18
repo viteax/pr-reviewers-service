@@ -11,10 +11,13 @@ Puller - сервис, автоматически назначающий рев�
 
 ## Как поднять?
 
-- Одной командой
+- С помощью docker-compose up
 
 ```bash
+git clone https://github.com/viteax/pr-reviewers-service.git
+cd pr-reviewers-service
 docker-compose up
+
 ```
 
 - Linux, скрипт одной копипастой (нужна утилита make) 
